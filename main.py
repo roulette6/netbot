@@ -3,6 +3,7 @@ import logging
 from flask import Flask
 from slack import WebClient
 from slackeventsapi import SlackEventAdapter
+from yaml import safe_load
 from netbot import NetBot
 
 # Initialize a Flask app to host the events adapter
@@ -20,7 +21,7 @@ slack_web_client = WebClient(token=os.environ.get("SLACK_TOKEN"))
 
 def get_help(channel):
     """
-    Craft the NetBot and send help text to the channel
+    Instantiate NetBot and send help text to the channel
     """
 
     # Create a new NetBot
@@ -31,6 +32,51 @@ def get_help(channel):
 
     # Post the help message in Slack
     slack_web_client.chat_postMessage(**message)
+
+
+def get_routes(channel, device):
+    """
+    Instantiate NetBot and get device routes
+    """
+
+    # Create a new NetBot
+    netbot = NetBot(channel, device)
+
+    # Get device routes
+    message = netbot.get_routes()
+
+    # Post routes in Slack
+    slack_web_client.chat_postMessage(**message)
+
+
+def get_interfaces(channel, device):
+    """
+    Instantiate NetBot and get device routes
+    """
+
+    # Create a new NetBot
+    netbot = NetBot(channel, device)
+
+    # Get device interfaces
+    message = netbot.get_interfaces()
+
+    # Post interfaces in Slack
+    slack_web_client.chat_postMessage(**message)
+
+
+def get_device(device=""):
+    # Read hosts file into structured data
+    with open("hosts.yml", encoding="utf-8") as file:
+        hosts = safe_load(file)
+
+    # Add credentials from env vars
+    for host in hosts["host_list"]:
+        host["username"] = os.environ.get("NTWK_USERNAME")
+        host["password"] = os.environ.get("NTWK_PASSWORD")
+    rt1, rt2 = hosts["host_list"]
+
+    devices = {"rt1": rt1, "rt2": rt2}
+    return devices[device] if device else ""
 
 
 # When the events adapter detects a message, forward that
@@ -45,19 +91,29 @@ def message(payload):
     # Get the event data from the payload
     event = payload.get("event", {})
 
-    # Get the text from the event that came through
-    text = event.get("text")
+    # Get the text and channel from the event received
+    text = event.get("text").lower()
+    channel_id = event.get("channel")
 
-    # Check if the help phrase was in the text of the
-    # message. If so, execute the code to flip a coin.
-    if "netbot help" in text.lower():
-        # Since the activation phrase was met, get the
-        # channel ID the event was executed on
-        channel_id = event.get("channel")
+    try:
+        command, host = text.split(" device=")
+    except ValueError:
+        command = text
+        host = None
 
-        # Execute the flip_coin function and send result
-        # to the channel
-        return get_help(channel_id)
+    if host:
+        # Get dict of device info needed for login
+        device = get_device(host)
+
+        # Determine which method to call based on command
+        match command:
+            case "netbot get routes":
+                return get_routes(channel_id, device)
+            case "netbot get interface info":
+                return get_interfaces(channel_id, device)
+    else:
+        if command == "netbot help":
+            return get_help(channel_id)
 
 
 if __name__ == "__main__":
