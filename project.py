@@ -11,7 +11,7 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
 # listen for debug request
 @app.message("netbot debug")
-def message_help(message, say):
+def message_debug(message, say):
     debug_msg = ""
     for key, value in message.items():
         debug_msg = debug_msg + f"{key}: {value}\n"
