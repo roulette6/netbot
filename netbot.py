@@ -7,30 +7,23 @@ class NetBot:
     based on messages sent by Slack users
     """
 
-    HELP_BLOCK = {
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": (
-                "Here are the things you can ask me to do:\n\n"
-                "```\n"
-                "# get interface information\n"
-                "netbot get interface info device=<device name>\n\n"
-                "# get routes\n"
-                "netbot get routes device=<device name>\n\n"
-                "# get HSRP brief output\n"
-                "netbot get hrsp device=<device name>\n"
-                "```\n\n"
-                "where devices are `rt1` and `rt2`"
-            ),
-        },
-    }
+    HELP_TEXT = (
+        "Here are the things you can ask me to do:\n\n"
+        "```\n"
+        "# get interface information\n"
+        "netbot get interface info device=<device name>\n\n"
+        "# get routes\n"
+        "netbot get routes device=<device name>\n\n"
+        "# get HSRP brief output\n"
+        "netbot get hrsp device=<device name>\n"
+        "```\n\n"
+        "where devices are `rt1` and `rt2`"
+    )
 
-    def __init__(self, channel, device=""):
+    def __init__(self, device=""):
         """
         Class constructor
         """
-        self.channel = channel
         self.device = device
 
     def send_help_info(self):
@@ -38,100 +31,44 @@ class NetBot:
         Send help info to users know what to do
         """
 
-        return {
-            "channel": self.channel,
-            "blocks": [self.HELP_BLOCK],
-        }
+        return self.HELP_TEXT
 
     def get_routes(self):
         """
         get route table for device indicated
         """
 
+        # If we didn't get a dict passed as device, the
+        # device is invalid
+        if not type(self.device) is dict:
+            return f"Invalid device."
+
         # Connect to device and get command output
         try:
             connection = ConnectHandler(**self.device)
         except:
             # connection error
-            return {
-                "channel": self.channel,
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": (
-                                f"There was a problem connecting to {self.device['host']}:\n\n"
-                            ),
-                        },
-                    }
-                ],
-            }
-
+            return f"There was a problem connecting to {self.device['host']}:\n\n"
         else:
             with ConnectHandler(**self.device) as connection:
-                output = connection.send_command("show ip route | b ^Gate")
-
-        return {
-            "channel": self.channel,
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": (
-                            f"Here are the routes for {self.device['host']}:\n\n"
-                            "```\n"
-                            f"{output}\n"
-                            "```\n"
-                        ),
-                    },
-                }
-            ],
-        }
+                return connection.send_command("show ip route | b ^Gate")
 
     def get_interfaces(self):
         """
         get interface info for device indicated
         """
 
+        # If we didn't get a dict passed as device, the
+        # device is invalid
+        if not type(self.device) is dict:
+            return f"Invalid device."
+
         # Connect to device and get command output
         try:
             connection = ConnectHandler(**self.device)
         except:
             # connection error
-            return {
-                "channel": self.channel,
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": (
-                                f"There was a problem connecting to {self.device['host']}:\n\n"
-                            ),
-                        },
-                    }
-                ],
-            }
+            return f"There was a problem connecting to {self.device['host']}:\n\n"
         else:
             with ConnectHandler(**self.device) as connection:
-                output = connection.send_command("show ip int brief")
-
-        return {
-            "channel": self.channel,
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": (
-                            f"Here are the interfaces for {self.device['host']}:\n\n"
-                            "```\n"
-                            f"{output}\n"
-                            "```\n"
-                        ),
-                    },
-                }
-            ],
-        }
+                return connection.send_command("show ip interface brief")

@@ -1,106 +1,101 @@
 import os
 import logging
-from flask import Flask
-from slack import WebClient
-from slackeventsapi import SlackEventAdapter
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+
+# from slack_sdk import WebClient
 from yaml import safe_load
 from netbot import NetBot
 
-# Initialize a Flask app to host the events adapter
-main = Flask(__name__)
+# TODO SLACK_APP_TOKEN="xapp..."
+# TODO SLACK_BOT_TOKEN="xoxb-..."
 
-# Create an events adapter and register it to an endpoint
-# in the slack app for event ingestion
-slack_events_adapter = SlackEventAdapter(
-    os.environ.get("SLACK_EVENTS_TOKEN"), "/slack/events", main
-)
+# Initialize slack app with bot token and socket mode handler
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
-# Initialize a web API client
-slack_web_client = WebClient(token=os.environ.get("SLACK_TOKEN"))
-
-# When the events adapter detects a message, forward that
-# payload to this function
-@slack_events_adapter.on("message")
-def message(payload):
-    """
-    Parse the message event, and call a function based
-    on the command.
-    """
-
-    # Get the event data from the payload
-    event = payload.get("event", {})
-
-    # Get the text and channel from the event received
-    text = event.get("text").lower()
-    channel_id = event.get("channel")
-
-    try:
-        command, host = text.split(" device=")
-    except ValueError:
-        command = text
-        host = None
-
-    if host:
-        # Get dict of device info needed for login
-        device = get_device(host)
-
-        # Determine which method to call based on command
-        match command:
-            case "netbot get routes":
-                return get_routes(channel_id, device)
-            case "netbot get interface info":
-                return get_interfaces(channel_id, device)
-    else:
-        if command == "netbot help":
-            return get_help(channel_id)
+# listen for debug request
+@app.message("netbot debug")
+def message_help(message, say):
+    debug_msg = ""
+    for key, value in message.items():
+        debug_msg = debug_msg + f"{key}: {value}\n"
+    say(f"```\n{debug_msg}\n```")
 
 
-def get_help(channel):
+# Listen to incoming messages that contain "netbot help"
+@app.message("netbot help")
+def message_help(message, say):
     """
     Instantiate NetBot and send help text to the channel
     """
 
     # Create a new NetBot
-    netbot = NetBot(channel)
+    netbot = NetBot()
 
-    # Get the help message payload
-    message = netbot.send_help_info()
-
-    # Post the help message in Slack
-    slack_web_client.chat_postMessage(**message)
+    # Return the help message text
+    help_text = netbot.send_help_info()
+    say(help_text)
 
 
-def get_routes(channel, device):
+# listen for message requesting routes
+@app.message("netbot get routes device")
+def send_routes(message, say):
     """
     Instantiate NetBot and get device routes
     """
 
-    # Create a new NetBot
-    netbot = NetBot(channel, device)
+    # get command device dict from input
+    command, device = get_command_and_device(message["text"])
+
+    netbot = NetBot(device)
 
     # Get device routes
-    message = netbot.get_routes()
+    device_routes = netbot.get_routes()
 
     # Post routes in Slack
-    slack_web_client.chat_postMessage(**message)
+    say(f"```\n{device_routes}\n```")
 
 
-def get_interfaces(channel, device):
+# listen for message requesting routes
+@app.message("netbot get interface info")
+def send_interfaces(message, say):
     """
-    Instantiate NetBot and get device routes
+    Instantiate NetBot and get device interfaces
     """
+
+    # split input into command and device
+    command, device = get_command_and_device(message["text"])
 
     # Create a new NetBot
-    netbot = NetBot(channel, device)
+    netbot = NetBot(device)
 
-    # Get device interfaces
-    message = netbot.get_interfaces()
+    # Get device routes
+    device_interfaces = netbot.get_interfaces()
 
-    # Post interfaces in Slack
-    slack_web_client.chat_postMessage(**message)
+    # Post routes in Slack
+    say(f"```\n{device_interfaces}\n```")
 
 
-def get_device(device=""):
+def get_command_and_device(message):
+    """
+    Returns device name given a Slack message
+    """
+
+    try:
+        # split input into command and device
+        command, device_key = message.strip().split(" device=")
+    except ValueError:
+        # No device found
+        return None, None
+    else:
+        device = get_device_dict(device_key)
+        return command, device
+
+
+def get_device_dict(device=""):
+    """
+    Accepts a hostname and returns its dict of attr
+    """
     # Read hosts file into structured data
     with open("hosts.yml", encoding="utf-8") as file:
         hosts = safe_load(file)
@@ -112,16 +107,12 @@ def get_device(device=""):
     rt1, rt2 = hosts["host_list"]
 
     devices = {"rt1": rt1, "rt2": rt2}
-    return devices[device] if device else ""
+
+    try:
+        return devices[device]
+    except KeyError:
+        return None
 
 
 if __name__ == "__main__":
-    # Create the logging object, increase its verbosity
-    # to DEBUG, and add the streamhandler as the
-    # logging handler
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler())
-
-    # Run your app on all IP addr instead of only loopback
-    main.run(host="0.0.0.0", port=3000)
+    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
