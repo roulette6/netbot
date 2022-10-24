@@ -15,15 +15,16 @@ class NetBot:
         "# get routes\n"
         "netbot get routes device=<device name>\n\n"
         "# get HSRP brief output\n"
-        "netbot get hrsp device=<device name>\n"
+        "netbot get hsrp device=<device name>\n"
         "```\n\n"
         "where devices are `rt1` and `rt2`"
     )
 
-    def __init__(self, device=""):
+    def __init__(self, command="", device=""):
         """
         Class constructor
         """
+        self.command = command
         self.device = device
 
     def send_help_info(self):
@@ -33,7 +34,7 @@ class NetBot:
 
         return self.HELP_TEXT
 
-    def get_routes(self):
+    def get_output(self):
         """
         get route table for device indicated
         """
@@ -41,7 +42,20 @@ class NetBot:
         # If we didn't get a dict passed as device, the
         # device is invalid
         if not type(self.device) is dict:
-            return f"Invalid device."
+            return f"Invalid device. Say \"netbot help\" for list of valid devices."
+
+        match self.command:
+            case "netbot get interface info":
+                command = "show ip interface brief"
+            case "netbot get routes":
+                command = "show ip route | begin ^Gateway"
+            case "netbot get hsrp":
+                command = "show standby brief"
+            case _:
+                return (
+                    f"Command '{self.command}' is invalid or currently unsupported."
+                    "Say `netbot help` for list of valid commands."
+                )
 
         # Connect to device and get command output
         try:
@@ -51,24 +65,4 @@ class NetBot:
             return f"There was a problem connecting to {self.device['host']}:\n\n"
         else:
             with ConnectHandler(**self.device) as connection:
-                return connection.send_command("show ip route | b ^Gate")
-
-    def get_interfaces(self):
-        """
-        get interface info for device indicated
-        """
-
-        # If we didn't get a dict passed as device, the
-        # device is invalid
-        if not type(self.device) is dict:
-            return f"Invalid device."
-
-        # Connect to device and get command output
-        try:
-            connection = ConnectHandler(**self.device)
-        except:
-            # connection error
-            return f"There was a problem connecting to {self.device['host']}:\n\n"
-        else:
-            with ConnectHandler(**self.device) as connection:
-                return connection.send_command("show ip interface brief")
+                return connection.send_command(command)

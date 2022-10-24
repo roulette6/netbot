@@ -34,7 +34,7 @@ def message_help(message, say):
 
 
 # listen for message requesting routes
-@app.message("netbot get routes device")
+@app.message("netbot get")
 def send_routes(message, say):
     """
     Instantiate NetBot and get device routes
@@ -43,33 +43,13 @@ def send_routes(message, say):
     # get command device dict from input
     command, device = get_command_and_device(message["text"])
 
-    netbot = NetBot(device)
+    netbot = NetBot(command, device)
 
     # Get device routes
-    device_routes = netbot.get_routes()
+    device_routes = netbot.get_output()
 
     # Post routes in Slack
     say(f"```\n{device_routes}\n```")
-
-
-# listen for message requesting routes
-@app.message("netbot get interface info")
-def send_interfaces(message, say):
-    """
-    Instantiate NetBot and get device interfaces
-    """
-
-    # split input into command and device
-    command, device = get_command_and_device(message["text"])
-
-    # Create a new NetBot
-    netbot = NetBot(device)
-
-    # Get device routes
-    device_interfaces = netbot.get_interfaces()
-
-    # Post routes in Slack
-    say(f"```\n{device_interfaces}\n```")
 
 
 def get_command_and_device(message):
