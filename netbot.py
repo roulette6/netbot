@@ -49,8 +49,28 @@ class NetBot:
         """
 
         # Connect to device and get command output
-        with ConnectHandler(**self.device) as connection:
-            output = connection.send_command("show ip route | b ^Gate")
+        try:
+            connection = ConnectHandler(**self.device)
+        except:
+            # connection error
+            return {
+                "channel": self.channel,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": (
+                                f"There was a problem connecting to {self.device['host']}:\n\n"
+                            ),
+                        },
+                    }
+                ],
+            }
+
+        else:
+            with ConnectHandler(**self.device) as connection:
+                output = connection.send_command("show ip route | b ^Gate")
 
         return {
             "channel": self.channel,
@@ -76,8 +96,27 @@ class NetBot:
         """
 
         # Connect to device and get command output
-        with ConnectHandler(**self.device) as connection:
-            output = connection.send_command("show ip int brief")
+        try:
+            connection = ConnectHandler(**self.device)
+        except:
+            # connection error
+            return {
+                "channel": self.channel,
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": (
+                                f"There was a problem connecting to {self.device['host']}:\n\n"
+                            ),
+                        },
+                    }
+                ],
+            }
+        else:
+            with ConnectHandler(**self.device) as connection:
+                output = connection.send_command("show ip int brief")
 
         return {
             "channel": self.channel,

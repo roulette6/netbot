@@ -7,16 +7,52 @@ from yaml import safe_load
 from netbot import NetBot
 
 # Initialize a Flask app to host the events adapter
-app = Flask(__name__)
+main = Flask(__name__)
 
 # Create an events adapter and register it to an endpoint
 # in the slack app for event ingestion
 slack_events_adapter = SlackEventAdapter(
-    os.environ.get("SLACK_EVENTS_TOKEN"), "/slack/events", app
+    os.environ.get("SLACK_EVENTS_TOKEN"), "/slack/events", main
 )
 
 # Initialize a web API client
 slack_web_client = WebClient(token=os.environ.get("SLACK_TOKEN"))
+
+# When the events adapter detects a message, forward that
+# payload to this function
+@slack_events_adapter.on("message")
+def message(payload):
+    """
+    Parse the message event, and call a function based
+    on the command.
+    """
+
+    # Get the event data from the payload
+    event = payload.get("event", {})
+
+    # Get the text and channel from the event received
+    text = event.get("text").lower()
+    channel_id = event.get("channel")
+
+    try:
+        command, host = text.split(" device=")
+    except ValueError:
+        command = text
+        host = None
+
+    if host:
+        # Get dict of device info needed for login
+        device = get_device(host)
+
+        # Determine which method to call based on command
+        match command:
+            case "netbot get routes":
+                return get_routes(channel_id, device)
+            case "netbot get interface info":
+                return get_interfaces(channel_id, device)
+    else:
+        if command == "netbot help":
+            return get_help(channel_id)
 
 
 def get_help(channel):
@@ -79,54 +115,13 @@ def get_device(device=""):
     return devices[device] if device else ""
 
 
-# When the events adapter detects a message, forward that
-# payload to this function
-@slack_events_adapter.on("message")
-def message(payload):
-    """
-    Parse the message event, and call a function based
-    on the command.
-    """
-
-    # Get the event data from the payload
-    event = payload.get("event", {})
-
-    # Get the text and channel from the event received
-    text = event.get("text").lower()
-    channel_id = event.get("channel")
-
-    try:
-        command, host = text.split(" device=")
-    except ValueError:
-        command = text
-        host = None
-
-    if host:
-        # Get dict of device info needed for login
-        device = get_device(host)
-
-        # Determine which method to call based on command
-        match command:
-            case "netbot get routes":
-                return get_routes(channel_id, device)
-            case "netbot get interface info":
-                return get_interfaces(channel_id, device)
-    else:
-        if command == "netbot help":
-            return get_help(channel_id)
-
-
 if __name__ == "__main__":
-    # Create the logging object
+    # Create the logging object, increase its verbosity
+    # to DEBUG, and add the streamhandler as the
+    # logging handler
     logger = logging.getLogger()
-
-    # Set the log level to DEBUG. This will increase
-    # verbosity of log messages
     logger.setLevel(logging.DEBUG)
-
-    # Add the StreamHandler as a logging handler
     logger.addHandler(logging.StreamHandler())
 
-    # Run your app on your externally facing IP addr
-    # on port 3000 instead of loopback
-    app.run(host="0.0.0.0", port=3000)
+    # Run your app on all IP addr instead of only loopback
+    main.run(host="0.0.0.0", port=3000)
