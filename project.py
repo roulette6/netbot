@@ -2,13 +2,9 @@ import os
 import logging
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-
-# from slack_sdk import WebClient
 from yaml import safe_load
 from netbot import NetBot
 
-# TODO SLACK_APP_TOKEN="xapp..."
-# TODO SLACK_BOT_TOKEN="xoxb-..."
 
 # Initialize slack app with bot token and socket mode handler
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
