@@ -38,9 +38,9 @@ def message_help(message, say):
     say(help_text)
 
 
-# listen for message requesting routes
+# listen for message requesting device output
 @app.message("netbot get")
-def send_routes(message, say):
+def send_device_output(message, say):
     """
     Instantiate NetBot, get command output when
     "netbot get" appears in a Slack message,
@@ -56,10 +56,10 @@ def send_routes(message, say):
 
     netbot = NetBot(command, device)
 
-    # Get device routes
+    # Get command output from device
     device_routes = netbot.get_output()
 
-    # Post routes in Slack
+    # Post output in Slack
     say(f"```\n{device_routes}\n```")
 
 
