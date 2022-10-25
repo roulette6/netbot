@@ -21,6 +21,7 @@ def message_debug(message, say):
     :return: Text containing debug message
     :rtype: str
     """
+
     debug_msg = ""
     for key, value in message.items():
         debug_msg = debug_msg + f"{key}: {value}\n"
@@ -134,12 +135,11 @@ def mock_message_debug(message):
     :return: Text containing debug message
     :rtype: str
     """
-    
+
     debug_msg = ""
     for key, value in message.items():
         debug_msg = debug_msg + f"{key}: {value}\n"
     return f"```\n{debug_msg}\n```"
-
 
 
 def mock_message_help(message):
@@ -158,7 +158,6 @@ def mock_message_help(message):
     # Return the help message text
     help_text = netbot.send_help_info()
     return help_text
-
 
 
 def mock_send_device_output(message):
@@ -181,6 +180,7 @@ def mock_send_device_output(message):
 
     # Post output in Slack
     return f"```\n{device_output}\n```"
+
 
 if __name__ == "__main__":
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()

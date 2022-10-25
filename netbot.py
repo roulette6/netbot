@@ -54,7 +54,7 @@ class NetBot:
         # If we didn't get a dict passed as device, the
         # device is invalid
         if not type(self.device) is dict:
-            return f'Invalid device. Say "netbot help" for list of valid devices.'
+            return 'Invalid device. Say "netbot help" for list of valid devices.'
 
         match self.command:
             case "netbot get interface info":
