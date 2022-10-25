@@ -57,10 +57,10 @@ def send_device_output(message, say):
     netbot = NetBot(command, device)
 
     # Get command output from device
-    device_routes = netbot.get_output()
+    device_output = netbot.get_output()
 
     # Post output in Slack
-    say(f"```\n{device_routes}\n```")
+    say(f"```\n{device_output}\n```")
 
 
 def get_command_and_device(message):
