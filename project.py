@@ -12,6 +12,15 @@ app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 # listen for debug request
 @app.message("netbot debug")
 def message_debug(message, say):
+    """
+    Converts the Slack message payload into a string
+    and returns it as a string with code formatting.
+
+    :param message: Slack message payload
+    :param say: function included by slack_bolt library
+    :return: Text containing debug message
+    :rtype: str
+    """
     debug_msg = ""
     for key, value in message.items():
         debug_msg = debug_msg + f"{key}: {value}\n"
@@ -114,6 +123,64 @@ def get_device_dict(device=""):
     except KeyError:
         return None
 
+
+def mock_message_debug(message):
+    """
+    mock function for testing functionality of message_debug
+    which normally executes when the Slack message contains
+    the string "netbot debug"
+
+    :param message: mock Slack message payload dict
+    :return: Text containing debug message
+    :rtype: str
+    """
+    
+    debug_msg = ""
+    for key, value in message.items():
+        debug_msg = debug_msg + f"{key}: {value}\n"
+    return f"```\n{debug_msg}\n```"
+
+
+
+def mock_message_help(message):
+    """
+    mock function for testing functionality of message_help
+    which normally executes when the Slack message contains
+    the string "netbot help"
+
+    :param message: mock Slack message text
+    :return: No value; the function posts a message in Slack
+    """
+
+    # Create a new NetBot
+    netbot = NetBot()
+
+    # Return the help message text
+    help_text = netbot.send_help_info()
+    return help_text
+
+
+
+def mock_send_device_output(message):
+    """
+    mock function for testing functionality of send_device_output
+    which normally executes when the Slack message contains
+    the string "netbot get"
+
+    :param message: mock Slack message text
+    :return: No value; the function posts a message in Slack
+    """
+
+    # get command device dict from input
+    command, device = get_command_and_device(message["text"])
+
+    netbot = NetBot(command, device)
+
+    # Get command output from device
+    device_output = netbot.get_output()
+
+    # Post output in Slack
+    return f"```\n{device_output}\n```"
 
 if __name__ == "__main__":
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
