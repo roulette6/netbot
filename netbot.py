@@ -23,6 +23,11 @@ class NetBot:
     def __init__(self, command="", device=""):
         """
         Class constructor
+
+        :param command: Command to pass to get_output()
+        :type command: str
+        :param device: Device attributes used for login
+        :type device: dict
         """
         self.command = command
         self.device = device
@@ -30,13 +35,20 @@ class NetBot:
     def send_help_info(self):
         """
         Send help info to users know what to do
+
+        :return: Text to post in a Slack message response
+        :rtype: str
         """
 
         return self.HELP_TEXT
 
     def get_output(self):
         """
-        get route table for device indicated
+        get output specified in self.command from device
+        indicated in self.device.
+        
+        :return: Command output or error message
+        :rtype: str
         """
 
         # If we didn't get a dict passed as device, the

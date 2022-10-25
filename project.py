@@ -23,6 +23,11 @@ def message_debug(message, say):
 def message_help(message, say):
     """
     Instantiate NetBot and send help text to the channel
+    when "netbot help" appears in a Slack message
+
+    :param message: Slack message payload
+    :param say: function included by slack_bolt library
+    :return: No value; the function posts a message in Slack
     """
 
     # Create a new NetBot
@@ -37,7 +42,13 @@ def message_help(message, say):
 @app.message("netbot get")
 def send_routes(message, say):
     """
-    Instantiate NetBot and get device routes
+    Instantiate NetBot, get command output when
+    "netbot get" appears in a Slack message,
+    and send response to Slack.
+
+    :param message: Slack message payload
+    :param say: function included by slack_bolt library
+    :return: No value; the function posts a message in Slack
     """
 
     # get command device dict from input
@@ -54,7 +65,14 @@ def send_routes(message, say):
 
 def get_command_and_device(message):
     """
-    Returns device name given a Slack message
+    Parses Slack message into the command and device.
+    Calls get_device_dict() to get the device dict if
+    the device exists.
+
+    :param message: Slack message text
+    :type message: str
+    :return: command and device tuple or None, None tuple
+    :rtype: (str,dict)
     """
 
     try:
@@ -70,7 +88,14 @@ def get_command_and_device(message):
 
 def get_device_dict(device=""):
     """
-    Accepts a hostname and returns its dict of attr
+    Accepts a hostname and returns its dict of attr if the
+    host exists in hosts.yml device dict. This dict is
+    used for logging into the network device.
+
+    :param device: Slack message text
+    :type device: str
+    :return: A dictionary of device attributes
+    :rtype: dict
     """
     # Read hosts file into structured data
     with open("hosts.yml", encoding="utf-8") as file:
