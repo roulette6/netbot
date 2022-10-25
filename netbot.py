@@ -42,7 +42,7 @@ class NetBot:
         # If we didn't get a dict passed as device, the
         # device is invalid
         if not type(self.device) is dict:
-            return f"Invalid device. Say \"netbot help\" for list of valid devices."
+            return f'Invalid device. Say "netbot help" for list of valid devices.'
 
         match self.command:
             case "netbot get interface info":
@@ -62,7 +62,7 @@ class NetBot:
             connection = ConnectHandler(**self.device)
         except:
             # connection error
-            return f"There was a problem connecting to {self.device['host']}:\n\n"
+            return f"There was a problem connecting to {self.device['host']}\n\n"
         else:
             with ConnectHandler(**self.device) as connection:
                 return connection.send_command(command)
